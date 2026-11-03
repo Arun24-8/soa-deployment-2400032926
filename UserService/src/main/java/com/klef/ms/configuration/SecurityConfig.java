@@ -16,48 +16,42 @@ import com.klef.ms.security.JwtFilter;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-public class SecurityConfig 
-{
+public class SecurityConfig {
+
     @Bean
-    PasswordEncoder passwordEncoder() 
-    {
+    PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
     SecurityFilterChain securityFilterChain(
-        HttpSecurity http,
-        JwtFilter jwtFilter) throws Exception 
-    {
+            HttpSecurity http,
+            JwtFilter jwtFilter) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .formLogin(form -> form.disable())
-            .httpBasic(httpBasic -> httpBasic.disable())
-
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(
-                    SessionCreationPolicy.STATELESS
+                .csrf(csrf -> csrf.disable())
+                .formLogin(form -> form.disable())
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .sessionManagement(session
+                        -> session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
                 )
-            )
-
-            .authorizeHttpRequests(auth -> auth
-
-                .requestMatchers(
-                    "/user/",
-                    "/user/test",
-                    "/user/add",
-                    "/user/login",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**"
-                ).permitAll()
-                                   
-                .anyRequest().authenticated()
-            )
-
-            .addFilterBefore(
-                jwtFilter,
-                UsernamePasswordAuthenticationFilter.class
-            );
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/user/",
+                                "/user/test",
+                                "/user/add",
+                                "/user/login",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/actuator/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(
+                        jwtFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }

@@ -17,32 +17,27 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-
 @Component
-public class JwtFilter extends OncePerRequestFilter
-{
+public class JwtFilter extends OncePerRequestFilter {
+
     @Autowired
     private JwtUtil jwtUtil;
 
     @Autowired
     private UserService service;
 
-
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain chain)
-            throws ServletException, IOException
-    {
+            throws ServletException, IOException {
 
         // =====================================================
         // GET REQUEST URI
         // =====================================================
-
-        String requestURI =
-                request.getRequestURI();
-
+        String requestURI
+                = request.getRequestURI();
 
         System.out.println();
         System.out.println("======================================");
@@ -51,26 +46,22 @@ public class JwtFilter extends OncePerRequestFilter
         System.out.println("Servlet Path: " + request.getServletPath());
         System.out.println("======================================");
 
-
         // =====================================================
         // PUBLIC ENDPOINTS
         // =====================================================
-
-        boolean isPublicEndpoint =
-                requestURI.endsWith("/user/")
+        boolean isPublicEndpoint
+                = requestURI.endsWith("/user/")
                 || requestURI.endsWith("/user/test")
                 || requestURI.endsWith("/user/login")
                 || requestURI.endsWith("/user/add")
                 || requestURI.startsWith("/swagger-ui")
-                || requestURI.startsWith("/v3/api-docs");
-
+                || requestURI.startsWith("/v3/api-docs")
+                || requestURI.startsWith("/actuator");
 
         // =====================================================
         // SKIP JWT VALIDATION FOR PUBLIC ENDPOINTS
         // =====================================================
-
-        if (isPublicEndpoint)
-        {
+        if (isPublicEndpoint) {
 
             System.out.println(
                     "Public Endpoint - JWT validation skipped"
@@ -84,37 +75,29 @@ public class JwtFilter extends OncePerRequestFilter
             return;
         }
 
-
         // =====================================================
         // PROTECTED ENDPOINT
         // =====================================================
-
         System.out.println(
                 "Protected Endpoint - JWT validation required"
         );
 
-
         // =====================================================
         // READ AUTHORIZATION HEADER
         // =====================================================
-
-        String header =
-                request.getHeader("Authorization");
-
+        String header
+                = request.getHeader("Authorization");
 
         System.out.println(
                 "Authorization Header = "
                 + header
         );
 
-
         // =====================================================
         // CHECK BEARER TOKEN
         // =====================================================
-
-        if (header == null ||
-                !header.startsWith("Bearer "))
-        {
+        if (header == null
+                || !header.startsWith("Bearer ")) {
 
             sendErrorResponse(
                     response,
@@ -125,95 +108,75 @@ public class JwtFilter extends OncePerRequestFilter
             return;
         }
 
-
         // =====================================================
         // EXTRACT TOKEN
         // =====================================================
+        String token
+                = header.substring(7).trim();
 
-        String token =
-                header.substring(7).trim();
-
-
-        try
-        {
+        try {
 
             // =================================================
             // EXTRACT USERNAME FROM JWT
             // =================================================
-
-            String username =
-                    jwtUtil.extractUsername(token);
-
+            String username
+                    = jwtUtil.extractUsername(token);
 
             System.out.println(
                     "Username from JWT = "
                     + username
             );
 
-
             // =================================================
             // CHECK AUTHENTICATION
             // =================================================
-
             if (SecurityContextHolder
                     .getContext()
-                    .getAuthentication() == null)
-            {
+                    .getAuthentication() == null) {
 
                 // =============================================
                 // LOAD USER FROM DATABASE
                 // =============================================
-
-                UserDetails userDetails =
-                        service.loadUserByUsername(
+                UserDetails userDetails
+                        = service.loadUserByUsername(
                                 username
                         );
-
 
                 // =============================================
                 // VALIDATE JWT
                 // =============================================
-
-                if (userDetails != null &&
-                        jwtUtil.validateToken(
+                if (userDetails != null
+                        && jwtUtil.validateToken(
                                 token,
                                 userDetails
-                        ))
-                {
+                        )) {
 
                     // =========================================
                     // CREATE AUTHENTICATION OBJECT
                     // =========================================
-
-                    UsernamePasswordAuthenticationToken
-                            authToken =
-                            new UsernamePasswordAuthenticationToken(
+                    UsernamePasswordAuthenticationToken authToken
+                            = new UsernamePasswordAuthenticationToken(
                                     userDetails,
                                     null,
                                     userDetails.getAuthorities()
                             );
 
-
                     // =========================================
                     // ADD REQUEST DETAILS
                     // =========================================
-
                     authToken.setDetails(
                             new WebAuthenticationDetailsSource()
                                     .buildDetails(request)
                     );
 
-
                     // =========================================
                     // STORE AUTHENTICATION
                     // =========================================
-
                     SecurityContextHolder
                             .getContext()
                             .setAuthentication(
                                     authToken
                             );
-
 
                     System.out.println(
                             "JWT validation successful"
@@ -224,9 +187,7 @@ public class JwtFilter extends OncePerRequestFilter
                             + userDetails.getAuthorities()
                     );
 
-                }
-                else
-                {
+                } else {
 
                     sendErrorResponse(
                             response,
@@ -238,9 +199,7 @@ public class JwtFilter extends OncePerRequestFilter
                 }
             }
 
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
 
             e.printStackTrace();
 
@@ -253,28 +212,23 @@ public class JwtFilter extends OncePerRequestFilter
             return;
         }
 
-
         // =====================================================
         // CONTINUE REQUEST
         // =====================================================
-
         chain.doFilter(
                 request,
                 response
         );
     }
 
-
     // =========================================================
     // SEND ERROR RESPONSE
     // =========================================================
-
     private void sendErrorResponse(
             HttpServletResponse response,
             int status,
             String message)
-            throws IOException
-    {
+            throws IOException {
 
         response.setStatus(status);
 
@@ -286,12 +240,10 @@ public class JwtFilter extends OncePerRequestFilter
                 "UTF-8"
         );
 
-
-        String jsonResponse =
-                "{\"error\":\"Unauthorized\",\"message\":\""
+        String jsonResponse
+                = "{\"error\":\"Unauthorized\",\"message\":\""
                 + message
                 + "\"}";
-
 
         response.getWriter().write(
                 jsonResponse
